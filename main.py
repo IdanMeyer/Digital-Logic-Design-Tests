@@ -7,7 +7,7 @@ from infra.Exceptions import InfraException
 from infra.test_runners import ProjectTestsRunner
 
 project_circuts_mapping = {
-    "introduction": ["ztor", "3_bit_carry"]
+    "introduction": ["ztor"]
 }
 
 TESTS_RUNNER_DIR = "TestsRunner"
