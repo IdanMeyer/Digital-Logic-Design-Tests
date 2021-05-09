@@ -130,3 +130,7 @@ dmypy.json
 
 # User .circ files
 TestsRunner/*.circ
+
+# Cornell's logisim
+Dependencies/logisim-2.7.2-cs3410-20140215.jar
+
