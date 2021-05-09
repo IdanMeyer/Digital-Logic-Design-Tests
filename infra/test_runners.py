@@ -6,6 +6,8 @@ import tempfile
 
 from infra.Exceptions import TestFailedException
 
+NEWLINE = "\n"
+
 
 class CircutTestVectorRunner(object):
     LOGISIM_PATH = "Dependencies/logisim-evolution-3.4.1-all.jar"
@@ -47,7 +49,7 @@ class CircutTestVectorRunner(object):
             raise TestFailedException("\n\n\n{} - {} tests have failed.\nFull output:\n{}".format(
                 self.circut_name,
                 int(failed),
-                os.linesep.join(error_lines)
+                NEWLINE.join(error_lines)
             ))
         print("{} - Passed".format(self.circut_name))
         return error_lines
@@ -58,18 +60,19 @@ class CircutTestVectorRunner(object):
         error_message = []
 
         # Remove comments and newlines
-        test_vector_data = os.linesep.join([x for x in test_vector_data.split(os.linesep) if
+        NEWLINE = "\n"
+        test_vector_data = NEWLINE.join([x for x in test_vector_data.split("\n") if
                                             not x.startswith("#") and x != ''])
         # Skip first line which contains the variables
-        for test_vector_line, output_line in zip(test_vector_data.split(os.linesep)[1:],
-                                                 output_data.split(os.linesep)[1:]):
+        for test_vector_line, output_line in zip(test_vector_data.split(NEWLINE)[1:],
+                                                 output_data.split(NEWLINE)[1:]):
             test_vector_vars = test_vector_line.split()
             output_vars = output_line.split()
             var_failed = False
             for test_vector_var, output_var in zip(test_vector_vars, output_vars):
                 if test_vector_var != output_var:
                     error_message.append("{} | {}".format(" ".join(test_vector_vars),
-                                                            " ".join(output_var)))
+                                                            " ".join(output_vars)))
                     failed += 1
                     var_failed = True
             if not var_failed:
@@ -77,8 +80,8 @@ class CircutTestVectorRunner(object):
 
         if len(error_message) != 0:
             # TODO: Improve print look
-            error_message.insert(0, "{} | {}".format(test_vector_data.split(os.linesep)[0],
-                                                       test_vector_data.split(os.linesep)[0]))
+            error_message.insert(0, "{} | {}".format(test_vector_data.split(NEWLINE)[0],
+                                                       test_vector_data.split(NEWLINE)[0]))
             error_message.insert(0, "Expected\t|Actual Data")
 
             # Print errors
