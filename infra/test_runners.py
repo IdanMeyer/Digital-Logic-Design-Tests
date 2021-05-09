@@ -1,6 +1,8 @@
 import os
+import shutil
 import subprocess
 import re
+import tempfile
 
 from infra.Exceptions import TestFailedException
 
@@ -41,7 +43,7 @@ class CircutTestVectorRunner(object):
                             self.project_name,
                             "test_vector_{}.txt".format(self.circut_name))
 
-    def run(self):
+    def _run_logisim(self, circ_path):
         output = subprocess.run(["java",
                                  "-jar",
                                  type(self).LOGISIM_PATH,
@@ -51,6 +53,12 @@ class CircutTestVectorRunner(object):
                                  self._get_test_vector_path(),
                                  ], stdout=subprocess.PIPE)
         return self._validate_output(output)
+
+    def run(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            # Copying file to temp directory in order to prevent any way from logisim to change the file
+            shutil.copy2(self.circ_path, f.name)
+            return self._run_logisim(f.name)
 
 class ProjectTestsRunner(object):
     def __init__(self, circ_path, project_name, circuts_names):

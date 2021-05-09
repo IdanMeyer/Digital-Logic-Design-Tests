@@ -1,4 +1,7 @@
+#!/usr/bin/python
+
 import os
+import tempfile
 
 from infra.Exceptions import InfraException
 from infra.test_runners import ProjectTestsRunner
@@ -30,11 +33,11 @@ print("Testing project: {}".format(project_name))
 print("Testing circ file: {}".format(circ_path))
 
 if project_name not in project_circuts_mapping.keys():
-    raise("Invalid project name parsed from .circ file name.\nSupported projects".format(
+    raise InfraException("Invalid project name parsed from .circ\nFile name {}.\nSupported projects: {}".format(
         circ_path,
-        project_circuts_mapping.keys()))
+        list(project_circuts_mapping.keys())))
 circuts_names = project_circuts_mapping[project_name]
+
 
 project_runner = ProjectTestsRunner(circ_path, project_name, circuts_names)
 project_runner.run()
-
