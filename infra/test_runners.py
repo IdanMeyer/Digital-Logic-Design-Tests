@@ -9,6 +9,31 @@ from infra.Exceptions import TestFailedException
 NEWLINE = "\n"
 
 
+def print_table(rows):
+    """print_table(rows)
+    Prints out a table using the data in `rows`, which is assumed to be a
+    sequence of sequences with the 0th element being the header.
+    """
+
+    # - figure out column widths
+    widths = [ len(max(columns, key=len)) for columns in zip(*rows) ]
+
+    # - print the header
+    header, data = rows[0], rows[1:]
+    print(
+        ' | '.join( format(title, "%ds" % width) for width, title in zip(widths, header) )
+        )
+
+    # - print the separator
+    print( '-+-'.join( '-' * width for width in widths ) )
+
+    # - print the data
+    for row in data:
+        print(
+            " | ".join( format(cdata, "%ds" % width) for width, cdata in zip(widths, row) )
+            )
+
+
 class CircutTestVectorRunner(object):
     LOGISIM_PATH = "Dependencies/logisim-evolution-3.4.1-all.jar"
 
@@ -46,10 +71,11 @@ class CircutTestVectorRunner(object):
 
         # str_output, total_tests, passed, failed = self._parse_output_tty_table(output)
         if int(failed) > 0:
+
             raise TestFailedException("\n\n\n{} - {} tests have failed.\nFull output:\n{}".format(
                 self.circut_name,
                 int(failed),
-                NEWLINE.join(error_lines)
+                ""
             ))
         print("{} - Passed".format(self.circut_name))
         return error_lines
@@ -57,6 +83,7 @@ class CircutTestVectorRunner(object):
     def _compare_output_and_test_vector(self, output_data, test_vector_data):
         passed = 0
         failed = 0
+        to_print = []
         error_message = []
 
         # Remove comments and newlines
@@ -64,6 +91,9 @@ class CircutTestVectorRunner(object):
         test_vector_data = NEWLINE.join([x for x in test_vector_data.split("\n") if
                                             not x.startswith("#") and x != ''])
         # Skip first line which contains the variables
+        a = ["Expected: " + x for x in test_vector_data.split(NEWLINE)[0].split()]
+        b = ["Actual: " + x for x in test_vector_data.split(NEWLINE)[0].split()]
+        to_print.append(a + [" "] + b +["Resolution"])
         for test_vector_line, output_line in zip(test_vector_data.split(NEWLINE)[1:],
                                                  output_data.split(NEWLINE)[1:]):
             test_vector_vars = test_vector_line.split()
@@ -77,18 +107,10 @@ class CircutTestVectorRunner(object):
                     var_failed = True
             if not var_failed:
                 passed += 1
+            to_print.append(test_vector_vars + [" "] + output_vars + ["Passed" if not var_failed else "Failed"])
+        print_table(to_print)
 
-        if len(error_message) != 0:
-            # TODO: Improve print look
-            error_message.insert(0, "{} | {}".format(test_vector_data.split(NEWLINE)[0],
-                                                       test_vector_data.split(NEWLINE)[0]))
-            error_message.insert(0, "Expected\t|Actual Data")
-
-            # Print errors
-            for line in error_message:
-                print(line)
-
-        return passed, failed, error_message
+        return passed, failed, to_print
 
 
 

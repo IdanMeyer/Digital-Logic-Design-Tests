@@ -3,7 +3,7 @@
 import os
 import tempfile
 
-from infra.Exceptions import InfraException
+from infra.Exceptions import InfraException, TestFailedException
 from infra.test_runners import ProjectTestsRunner
 
 project_circuts_mapping = {
@@ -40,4 +40,7 @@ circuts_names = project_circuts_mapping[project_name]
 
 
 project_runner = ProjectTestsRunner(circ_path, project_name, circuts_names)
-project_runner.run()
+try:
+    project_runner.run()
+except TestFailedException as e:
+    print(e)
