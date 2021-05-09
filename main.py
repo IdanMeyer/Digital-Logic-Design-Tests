@@ -24,6 +24,7 @@ class CircutTestVectorRunner(object):
                 int(failed),
                 str_output
             ))
+        print("{} - Passed".format(self.circut_name))
         return str_output
 
     def _parse_output(self, output):
@@ -32,9 +33,9 @@ class CircutTestVectorRunner(object):
         passed = re.search("Passed: (\d+)", str_output).group(1)
         failed = re.search("Failed: (\d+)", str_output).group(1)
 
-        print("Total Tests:", total_tests)
-        print("Passed:", passed)
-        print("Failed:", failed)
+        # print("Total Tests:", total_tests)
+        # print("Passed:", passed)
+        # print("Failed:", failed)
 
         return str_output, total_tests, passed, failed
 
@@ -54,8 +55,23 @@ class CircutTestVectorRunner(object):
                         ], stdout=subprocess.PIPE)
         return self._validate_output(output)
 
-project_name = "Project1"
-circut_name = "ztor"
-bla = CircutTestVectorRunner(circ_path, project_name, circut_name)
+class ProjectTestsRunner(object):
+    def __init__(self, circ_path, project_name, circuts_names):
+        self.circ_path = circ_path
+        self.project_name = project_name
+        self.circuts_names = circuts_names
+
+    def run(self):
+        for circut_name in self.circuts_names:
+            circut_test_runner = CircutTestVectorRunner(circ_path, project_name, circut_name)
+            circut_test_runner.run()
+
+
+project_name = "introduction"
+circuts_names = ["ztor", "3_bit_carry"]
+
+bla = ProjectTestsRunner(circ_path, project_name, circuts_names)
 bla.run()
+# bla = CircutTestVectorRunner(circ_path, project_name, circut_name)
+# bla.run()
 
