@@ -87,7 +87,6 @@ class CircutTestVectorRunner(object):
 
     def _parse_output_test_vector(self, output):
         str_output = output.stdout.decode("utf-8")
-        str_err = output.stderr.decode("utf-8")
 
         total_tests = re.search("Running (\d+) vectors", str_output).group(1)
         passed = re.search("Passed: (\d+)", str_output).group(1)
@@ -95,8 +94,6 @@ class CircutTestVectorRunner(object):
         global TOTAL_FAILURES
         TOTAL_FAILURES += int(failed)
 
-        # error_lines = [re.search("Error on test vector (\d+)", line) for line in str_err.split("\n") ]
-        # error_lines = [x.group(1) for x in error_lines if x]
         error_lines = []
 
         prev = None
@@ -110,23 +107,23 @@ class CircutTestVectorRunner(object):
         return str_output, total_tests, passed, failed, error_lines
 
 
-    def _validate_output_tty_table(self, output):
-        with open(self._get_test_vector_path()) as f:
-            test_vector_data = f.read()
-
-        output_data = output.stdout.decode("utf-8")
-        passed, failed, error_lines = self._compare_output_and_test_vector(output_data, test_vector_data)
-
-        # str_output, total_tests, passed, failed = self._parse_output_tty_table(output)
-        if int(failed) > 0:
-
-            raise TestFailedException("\n\n\n{} - {} tests have failed.\nFull output:\n{}".format(
-                self.circut_name,
-                int(failed),
-                ""
-            ))
-        print("{} - Passed".format(self.circut_name))
-        return error_lines
+    # def _validate_output_tty_table(self, output):
+    #     with open(self._get_test_vector_path()) as f:
+    #         test_vector_data = f.read()
+    #
+    #     output_data = output.stdout.decode("utf-8")
+    #     passed, failed, error_lines = self._compare_output_and_test_vector(output_data, test_vector_data)
+    #
+    #     # str_output, total_tests, passed, failed = self._parse_output_tty_table(output)
+    #     if int(failed) > 0:
+    #
+    #         raise TestFailedException("\n\n\n{} - {} tests have failed.\nFull output:\n{}".format(
+    #             self.circut_name,
+    #             int(failed),
+    #             ""
+    #         ))
+    #     print("{} - Passed".format(self.circut_name))
+    #     return error_lines
 
     def _compare_output_and_test_vector(self, output_data, test_vector_data):
         passed = 0
@@ -162,13 +159,13 @@ class CircutTestVectorRunner(object):
 
 
 
-    def _parse_output_tty_table(self, output):
-        str_output = output.stdout.decode("utf-8")
-        total_tests = re.search("Running (\d+) vectors", str_output).group(1)
-        passed = re.search("Passed: (\d+)", str_output).group(1)
-        failed = re.search("Failed: (\d+)", str_output).group(1)
-
-        return str_output, total_tests, passed, failed
+    # def _parse_output_tty_table(self, output):
+    #     str_output = output.stdout.decode("utf-8")
+    #     total_tests = re.search("Running (\d+) vectors", str_output).group(1)
+    #     passed = re.search("Passed: (\d+)", str_output).group(1)
+    #     failed = re.search("Failed: (\d+)", str_output).group(1)
+    #
+    #     return str_output, total_tests, passed, failed
 
     def _get_test_vector_path(self):
         return os.path.join("TestVectors",
@@ -194,7 +191,7 @@ class CircutTestVectorRunner(object):
         #                          "-circuit",
         #                          self.circut_name,
         #                          ], stdout=subprocess.PIPE)
-        return self._validate_output_tty_table(output)
+        # return self._validate_output_tty_table(output)
 
 class ProjectTestsRunner(object):
     def __init__(self, circ_path, project_name, circuts_names):
