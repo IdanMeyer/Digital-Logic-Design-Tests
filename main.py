@@ -8,6 +8,7 @@ from infra.test_runners import ProjectTestsRunner
 
 project_circuts_mapping = {
     "introduction": ["ztor"]
+    # "introduction": ["pf4"]
 }
 
 TESTS_RUNNER_DIR = "TestsRunner"

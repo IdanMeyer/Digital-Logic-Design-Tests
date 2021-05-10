@@ -35,7 +35,8 @@ def print_table(rows):
 
 
 class CircutTestVectorRunner(object):
-    LOGISIM_PATH = "Dependencies/logisim-evolution-3.4.1-all.jar"
+    # LOGISIM_PATH = "Dependencies/logisim-evolution-3.4.1-all.jar"
+    LOGISIM_PATH = "Dependencies/logisim-2.7.2-cs3410-20140215.jar"
 
     def __init__(self, circ_path, project_name, circuit_name):
         self.circ_path = circ_path
@@ -43,7 +44,33 @@ class CircutTestVectorRunner(object):
         self.circut_name = circuit_name
 
     def _validate_output_test_vector(self, output):
-        str_output, total_tests, passed, failed = self._parse_output_test_vector(output)
+        str_output, total_tests, passed, failed, error_lines = self._parse_output_test_vector(output)
+
+        # Print errors
+        with open(self._get_test_vector_path()) as f:
+            test_vector_data = f.read()
+        test_vector_data = NEWLINE.join([x for x in test_vector_data.split("\n") if
+                                         not x.startswith("#") and x != ''])
+        to_print = []
+        var_names = [re.sub("[\(\[].*?[\)\]]", "", x) for x in test_vector_data.split(NEWLINE)[0].split()]
+        a = ["Expected: " + x for x in var_names]
+        b = ["Actual: " + x for x in var_names]
+        to_print.append(a + b)
+
+        for error_line in error_lines:
+            line_number, error_message = error_line
+
+            expected_vars = test_vector_data.split(NEWLINE)[int(line_number)].split()
+            actual_vars = test_vector_data.split(NEWLINE)[int(line_number)].split()
+            # Find unexpected data
+            bla = re.search("(\w) = (\d+) \(expected (\d+)\)", error_message.strip())
+            variable_name = bla.group(1)
+            actual_var = bla.group(2)
+            expected_var = bla.group(3)
+            actual_vars[var_names.index(variable_name)] = actual_var
+            to_print.append(expected_vars + actual_vars)
+        print_table(to_print)
+
         if int(failed) > 0:
             raise TestFailedException("\n\n\n{} - {} tests have failed.\nFull output:\n{}".format(
                 self.circut_name,
@@ -55,11 +82,25 @@ class CircutTestVectorRunner(object):
 
     def _parse_output_test_vector(self, output):
         str_output = output.stdout.decode("utf-8")
+        str_err = output.stderr.decode("utf-8")
+
         total_tests = re.search("Running (\d+) vectors", str_output).group(1)
         passed = re.search("Passed: (\d+)", str_output).group(1)
         failed = re.search("Failed: (\d+)", str_output).group(1)
 
-        return str_output, total_tests, passed, failed
+        # error_lines = [re.search("Error on test vector (\d+)", line) for line in str_err.split("\n") ]
+        # error_lines = [x.group(1) for x in error_lines if x]
+        error_lines = []
+
+        prev = None
+        for i in "".join(str_output.split("\r")).split("\n"):
+            if "expected" in i:
+                error_lines.append((prev, i))
+            stripped_i = i.strip()
+            if len(stripped_i) > 0 and stripped_i[-1].isnumeric():
+                prev = stripped_i[-1]
+
+        return str_output, total_tests, passed, failed, error_lines
 
 
     def _validate_output_tty_table(self, output):
@@ -128,23 +169,24 @@ class CircutTestVectorRunner(object):
                             "test_vector_{}.txt".format(self.circut_name))
 
     def run(self):
-        # output = subprocess.run(["java",
-        #                          "-jar",
-        #                          type(self).LOGISIM_PATH,
-        #                          self.circ_path,
-        #                          "-test",
-        #                          self.circut_name,
-        #                          self._get_test_vector_path(),
-        #                          ], stdout=subprocess.PIPE)
         output = subprocess.run(["java",
                                  "-jar",
                                  type(self).LOGISIM_PATH,
                                  self.circ_path,
-                                 "-tty",
-                                 "table",
-                                 "-circuit",
+                                 "-test",
                                  self.circut_name,
-                                 ], stdout=subprocess.PIPE)
+                                 self._get_test_vector_path(),
+                                 ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return self._validate_output_test_vector(output)
+        # output = subprocess.run(["java",
+        #                          "-jar",
+        #                          type(self).LOGISIM_PATH,
+        #                          self.circ_path,
+        #                          "-tty",
+        #                          "table",
+        #                          "-circuit",
+        #                          self.circut_name,
+        #                          ], stdout=subprocess.PIPE)
         return self._validate_output_tty_table(output)
 
 class ProjectTestsRunner(object):
