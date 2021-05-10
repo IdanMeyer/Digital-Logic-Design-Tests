@@ -4,7 +4,7 @@ import subprocess
 import re
 import tempfile
 
-from infra.Exceptions import TestFailedException
+from infra.Exceptions import TestFailedException, InfraException
 
 NEWLINE = "\n"
 TOTAL_FAILURES = 0
@@ -64,7 +64,7 @@ class CircutTestVectorRunner(object):
             expected_vars = test_vector_data.split(NEWLINE)[int(line_number)].split()
             actual_vars = test_vector_data.split(NEWLINE)[int(line_number)].split()
             # Find unexpected data
-            bla = re.search("(\w) = (\d+) \(expected (\d+)\)", error_message.strip())
+            bla = re.search("(\w) = (\w+) \(expected (\w+)\)", error_message.strip())
             variable_name = bla.group(1)
             actual_var = bla.group(2)
             expected_var = bla.group(3)
@@ -87,6 +87,10 @@ class CircutTestVectorRunner(object):
 
     def _parse_output_test_vector(self, output):
         str_output = output.stdout.decode("utf-8")
+        str_err = output.stderr.decode("utf-8")
+
+        if "Error loading test vector" in str_err:
+            raise InfraException("Error while loading test vector. Full stderr: {}".format(str_err))
 
         total_tests = re.search("Running (\d+) vectors", str_output).group(1)
         passed = re.search("Passed: (\d+)", str_output).group(1)
@@ -102,7 +106,7 @@ class CircutTestVectorRunner(object):
                 error_lines.append((prev, i))
             stripped_i = i.strip()
             if len(stripped_i) > 0 and stripped_i[-1].isnumeric():
-                prev = stripped_i[-1]
+                prev = stripped_i.split(" ")[-1]
 
         return str_output, total_tests, passed, failed, error_lines
 
@@ -125,37 +129,37 @@ class CircutTestVectorRunner(object):
     #     print("{} - Passed".format(self.circut_name))
     #     return error_lines
 
-    def _compare_output_and_test_vector(self, output_data, test_vector_data):
-        passed = 0
-        failed = 0
-        to_print = []
-        error_message = []
-
-        # Remove comments and newlines
-        NEWLINE = "\n"
-        test_vector_data = NEWLINE.join([x for x in test_vector_data.split("\n") if
-                                            not x.startswith("#") and x != ''])
-        # Skip first line which contains the variables
-        a = ["Expected: " + x for x in test_vector_data.split(NEWLINE)[0].split()]
-        b = ["Actual: " + x for x in test_vector_data.split(NEWLINE)[0].split()]
-        to_print.append(a + [" "] + b +["Resolution"])
-        for test_vector_line, output_line in zip(test_vector_data.split(NEWLINE)[1:],
-                                                 output_data.split(NEWLINE)[1:]):
-            test_vector_vars = test_vector_line.split()
-            output_vars = output_line.split()
-            var_failed = False
-            for test_vector_var, output_var in zip(test_vector_vars, output_vars):
-                if test_vector_var != output_var:
-                    error_message.append("{} | {}".format(" ".join(test_vector_vars),
-                                                            " ".join(output_vars)))
-                    failed += 1
-                    var_failed = True
-            if not var_failed:
-                passed += 1
-            to_print.append(test_vector_vars + [" "] + output_vars + ["Passed" if not var_failed else "Failed"])
-        print_table(to_print)
-
-        return passed, failed, to_print
+    # def _compare_output_and_test_vector(self, output_data, test_vector_data):
+    #     passed = 0
+    #     failed = 0
+    #     to_print = []
+    #     error_message = []
+    #
+    #     # Remove comments and newlines
+    #     NEWLINE = "\n"
+    #     test_vector_data = NEWLINE.join([x for x in test_vector_data.split("\n") if
+    #                                         not x.startswith("#") and x != ''])
+    #     # Skip first line which contains the variables
+    #     a = ["Expected: " + x for x in test_vector_data.split(NEWLINE)[0].split()]
+    #     b = ["Actual: " + x for x in test_vector_data.split(NEWLINE)[0].split()]
+    #     to_print.append(a + [" "] + b +["Resolution"])
+    #     for test_vector_line, output_line in zip(test_vector_data.split(NEWLINE)[1:],
+    #                                              output_data.split(NEWLINE)[1:]):
+    #         test_vector_vars = test_vector_line.split()
+    #         output_vars = output_line.split()
+    #         var_failed = False
+    #         for test_vector_var, output_var in zip(test_vector_vars, output_vars):
+    #             if test_vector_var != output_var:
+    #                 error_message.append("{} | {}".format(" ".join(test_vector_vars),
+    #                                                         " ".join(output_vars)))
+    #                 failed += 1
+    #                 var_failed = True
+    #         if not var_failed:
+    #             passed += 1
+    #         to_print.append(test_vector_vars + [" "] + output_vars + ["Passed" if not var_failed else "Failed"])
+    #     print_table(to_print)
+    #
+    #     return passed, failed, to_print
 
 
 

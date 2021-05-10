@@ -1,0 +1,7 @@
+#First line labels input and output pins, labeled with [bit width] if >1
+#Each line after is an individual test with each column representing a pin
+#Numbers can be in decimal, binary, hexadecimal, or even octal if you want
+
+g           b
+0           0
+1           1
