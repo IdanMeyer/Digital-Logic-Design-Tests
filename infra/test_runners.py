@@ -7,7 +7,7 @@ import tempfile
 from infra.Exceptions import TestFailedException
 
 NEWLINE = "\n"
-
+TOTAL_FAILURES = 0
 
 def print_table(rows):
     """print_table(rows)
@@ -42,6 +42,7 @@ class CircutTestVectorRunner(object):
         self.circ_path = circ_path
         self.project_name = project_name
         self.circut_name = circuit_name
+        global TOTAL_FAILURES
 
     def _validate_output_test_vector(self, output):
         str_output, total_tests, passed, failed, error_lines = self._parse_output_test_vector(output)
@@ -69,16 +70,20 @@ class CircutTestVectorRunner(object):
             expected_var = bla.group(3)
             actual_vars[var_names.index(variable_name)] = actual_var
             to_print.append(expected_vars + actual_vars)
-        print_table(to_print)
+
+        if int(failed) != len(error_lines):
+            raise InfraException("Expected to have {} error but had {} error lines".format(
+                int(failed),
+                error_lines
+            ))
 
         if int(failed) > 0:
-            raise TestFailedException("\n\n\n{} - {} tests have failed.\nFull output:\n{}".format(
-                self.circut_name,
-                int(failed),
-                str_output
-            ))
-        print("{} - Passed".format(self.circut_name))
-        return str_output
+            print("\n{} - {} failures".format(int(failed), self.circut_name))
+            print_table(to_print)
+        else:
+            print("{} - Passed".format(self.circut_name))
+
+        return int(failed)
 
     def _parse_output_test_vector(self, output):
         str_output = output.stdout.decode("utf-8")
@@ -87,6 +92,8 @@ class CircutTestVectorRunner(object):
         total_tests = re.search("Running (\d+) vectors", str_output).group(1)
         passed = re.search("Passed: (\d+)", str_output).group(1)
         failed = re.search("Failed: (\d+)", str_output).group(1)
+        global TOTAL_FAILURES
+        TOTAL_FAILURES += int(failed)
 
         # error_lines = [re.search("Error on test vector (\d+)", line) for line in str_err.split("\n") ]
         # error_lines = [x.group(1) for x in error_lines if x]
@@ -194,6 +201,7 @@ class ProjectTestsRunner(object):
         self.circ_path = circ_path
         self.project_name = project_name
         self.circuts_names = circuts_names
+        global TOTAL_FAILURES
 
     def run(self):
         with tempfile.NamedTemporaryFile(delete=False) as f:
@@ -206,4 +214,8 @@ class ProjectTestsRunner(object):
                 circut_test_runner = CircutTestVectorRunner(temporary_circ_path, self.project_name, circut_name)
                 circut_test_runner.run()
 
-        print("\nAll Tests have passed!")
+        if 0 != TOTAL_FAILURES:
+            print("\nFound {} failures in total".format(TOTAL_FAILURES))
+        else:
+            print("\nAll tests have passed!")
+

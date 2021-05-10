@@ -7,7 +7,7 @@ from infra.Exceptions import InfraException, TestFailedException
 from infra.test_runners import ProjectTestsRunner
 
 project_circuts_mapping = {
-    "introduction": ["ztor"]
+    "introduction": ["ztor", "pf4"]
     # "introduction": ["pf4"]
 }
 
