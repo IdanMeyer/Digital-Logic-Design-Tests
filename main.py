@@ -7,27 +7,35 @@ from infra.Exceptions import InfraException, TestFailedException
 from infra.test_runners import ProjectTestsRunner
 
 project_circuts_mapping = {
-    # "introduction": ["ztor", "pf4", "tautology", "parity", "ztand"],
-    "introduction": ["ztand"],
-    # "graycode": ["g2b1", "g2b2", "g2b3", "g2b4"],
+    "introduction": ["ztor", "pf4", "tautology", "parity", "ztand"],
+    "graycode": ["g2b1", "g2b2", "g2b3", "g2b4"],
 }
 
 TESTS_RUNNER_DIR = "TestsRunner"
 def _get_project_name_from_tests_runner_dir():
     circ_files = [file_name for file_name in os.listdir(TESTS_RUNNER_DIR) if file_name.endswith(".circ")]
     if len(circ_files) == 0:
-        raise InfraException("Could not find .circ file")
+        raise InfraException("Could not find .circ file. Make sure it is placed at TestsRunner")
     if len(circ_files) > 1:
         raise InfraException(
             "More than 1 .circ file found. Make sure you have exactly 1 .circ file at {}".format(TESTS_RUNNER_DIR))
 
+
     file_name = circ_files[0]
     file_name_without_ext = os.path.splitext(file_name)[0]
-    split_data = file_name_without_ext.split("_")
-    if 3 != len(split_data):
-        raise InfraException("Invalid circ file: {}".format(file_name))
 
-    project_name = os.path.splitext(split_data[2])[0]
+    project_name = None
+    for name in project_circuts_mapping.keys():
+        if name in file_name_without_ext:
+            project_name = name
+
+    if not project_name:
+        split_data = file_name_without_ext.split("_")
+        if 3 != len(split_data):
+            raise InfraException("Invalid circ file: {}".format(file_name))
+
+        project_name = os.path.splitext(split_data[2])[0]
+
     return project_name, os.path.join(TESTS_RUNNER_DIR, file_name)
 
 project_name, circ_path = _get_project_name_from_tests_runner_dir()
