@@ -4,7 +4,7 @@ import subprocess
 import re
 import tempfile
 
-from infra.Exceptions import TestFailedException, InfraException
+from infra.Exceptions import InfraException
 
 NEWLINE = "\n"
 TOTAL_FAILURES = 0
@@ -35,41 +35,44 @@ def print_table(rows):
 
 
 class CircutTestVectorRunner(object):
-    # LOGISIM_PATH = "Dependencies/logisim-evolution-3.4.1-all.jar"
     LOGISIM_PATH = "Dependencies/logisim-2.7.2-cs3410-20140215.jar"
 
     def __init__(self, circ_path, project_name, circuit_name):
         self.circ_path = circ_path
         self.project_name = project_name
         self.circut_name = circuit_name
-        global TOTAL_FAILURES
 
-    def _validate_output_test_vector(self, output):
-        str_output, total_tests, passed, failed, error_lines = self._parse_output_test_vector(output)
+    def generate_errors_report(self, error_lines):
 
-        # Print errors
         with open(self._get_test_vector_path()) as f:
             test_vector_data = f.read()
         test_vector_data = NEWLINE.join([x for x in test_vector_data.split("\n") if
                                          not x.startswith("#") and x != ''])
-        to_print = []
+
+        errors_report = []
         var_names = [re.sub("[\(\[].*?[\)\]]", "", x) for x in test_vector_data.split(NEWLINE)[0].split()]
         a = ["Expected: " + x for x in var_names]
         b = ["Actual: " + x for x in var_names]
-        to_print.append(a + b)
-
+        errors_report.append(a + b)
         for error_line in error_lines:
             line_number, error_message = error_line
 
             expected_vars = test_vector_data.split(NEWLINE)[int(line_number)].split()
             actual_vars = test_vector_data.split(NEWLINE)[int(line_number)].split()
-            # Find unexpected data
+            # Find actual data which does not match expected data
             bla = re.search("(\w) = (\w+) \(expected (\w+)\)", error_message.strip())
             variable_name = bla.group(1)
             actual_var = bla.group(2)
             expected_var = bla.group(3)
             actual_vars[var_names.index(variable_name)] = actual_var
-            to_print.append(expected_vars + actual_vars)
+            errors_report.append(expected_vars + actual_vars)
+        return errors_report
+
+    def _validate_output_test_vector(self, output):
+        str_output, total_tests, passed, failed, error_lines = self._parse_output_test_vector(output)
+
+        errors_report = self.generate_errors_report(error_lines)
+
 
         if int(failed) != len(error_lines):
             raise InfraException("Expected to have {} error but had {} error lines".format(
@@ -79,13 +82,14 @@ class CircutTestVectorRunner(object):
 
         if int(failed) > 0:
             print("\n{} - {} failures".format(int(failed), self.circut_name))
-            print_table(to_print)
+            print_table(errors_report)
         else:
             print("{} - Passed".format(self.circut_name))
 
         return int(failed)
 
     def _parse_output_test_vector(self, output):
+        # Very hacky function to parse logisims output
         str_output = output.stdout.decode("utf-8")
         str_err = output.stderr.decode("utf-8")
 
@@ -95,11 +99,13 @@ class CircutTestVectorRunner(object):
         total_tests = re.search("Running (\d+) vectors", str_output).group(1)
         passed = re.search("Passed: (\d+)", str_output).group(1)
         failed = re.search("Failed: (\d+)", str_output).group(1)
+        # TODO: Remove this hack!
         global TOTAL_FAILURES
         TOTAL_FAILURES += int(failed)
 
         error_lines = []
 
+        # Find line number of the error. It appears at the previous line each time
         prev = None
         for i in "".join(str_output.split("\r")).split("\n"):
             if "expected" in i:
@@ -109,67 +115,6 @@ class CircutTestVectorRunner(object):
                 prev = stripped_i.split(" ")[-1]
 
         return str_output, total_tests, passed, failed, error_lines
-
-
-    # def _validate_output_tty_table(self, output):
-    #     with open(self._get_test_vector_path()) as f:
-    #         test_vector_data = f.read()
-    #
-    #     output_data = output.stdout.decode("utf-8")
-    #     passed, failed, error_lines = self._compare_output_and_test_vector(output_data, test_vector_data)
-    #
-    #     # str_output, total_tests, passed, failed = self._parse_output_tty_table(output)
-    #     if int(failed) > 0:
-    #
-    #         raise TestFailedException("\n\n\n{} - {} tests have failed.\nFull output:\n{}".format(
-    #             self.circut_name,
-    #             int(failed),
-    #             ""
-    #         ))
-    #     print("{} - Passed".format(self.circut_name))
-    #     return error_lines
-
-    # def _compare_output_and_test_vector(self, output_data, test_vector_data):
-    #     passed = 0
-    #     failed = 0
-    #     to_print = []
-    #     error_message = []
-    #
-    #     # Remove comments and newlines
-    #     NEWLINE = "\n"
-    #     test_vector_data = NEWLINE.join([x for x in test_vector_data.split("\n") if
-    #                                         not x.startswith("#") and x != ''])
-    #     # Skip first line which contains the variables
-    #     a = ["Expected: " + x for x in test_vector_data.split(NEWLINE)[0].split()]
-    #     b = ["Actual: " + x for x in test_vector_data.split(NEWLINE)[0].split()]
-    #     to_print.append(a + [" "] + b +["Resolution"])
-    #     for test_vector_line, output_line in zip(test_vector_data.split(NEWLINE)[1:],
-    #                                              output_data.split(NEWLINE)[1:]):
-    #         test_vector_vars = test_vector_line.split()
-    #         output_vars = output_line.split()
-    #         var_failed = False
-    #         for test_vector_var, output_var in zip(test_vector_vars, output_vars):
-    #             if test_vector_var != output_var:
-    #                 error_message.append("{} | {}".format(" ".join(test_vector_vars),
-    #                                                         " ".join(output_vars)))
-    #                 failed += 1
-    #                 var_failed = True
-    #         if not var_failed:
-    #             passed += 1
-    #         to_print.append(test_vector_vars + [" "] + output_vars + ["Passed" if not var_failed else "Failed"])
-    #     print_table(to_print)
-    #
-    #     return passed, failed, to_print
-
-
-
-    # def _parse_output_tty_table(self, output):
-    #     str_output = output.stdout.decode("utf-8")
-    #     total_tests = re.search("Running (\d+) vectors", str_output).group(1)
-    #     passed = re.search("Passed: (\d+)", str_output).group(1)
-    #     failed = re.search("Failed: (\d+)", str_output).group(1)
-    #
-    #     return str_output, total_tests, passed, failed
 
     def _get_test_vector_path(self):
         return os.path.join("TestVectors",
@@ -186,22 +131,13 @@ class CircutTestVectorRunner(object):
                                  self._get_test_vector_path(),
                                  ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return self._validate_output_test_vector(output)
-        # output = subprocess.run(["java",
-        #                          "-jar",
-        #                          type(self).LOGISIM_PATH,
-        #                          self.circ_path,
-        #                          "-tty",
-        #                          "table",
-        #                          "-circuit",
-        #                          self.circut_name,
-        #                          ], stdout=subprocess.PIPE)
-        # return self._validate_output_tty_table(output)
 
 class ProjectTestsRunner(object):
     def __init__(self, circ_path, project_name, circuts_names):
         self.circ_path = circ_path
         self.project_name = project_name
-        self.circuts_names = circuts_names
+        self.circuits_names = circuts_names
+        # TODO: Remove this hack!
         global TOTAL_FAILURES
 
     def run(self):
@@ -211,9 +147,9 @@ class ProjectTestsRunner(object):
             temporary_circ_path = f.name
 
             # Run all test vectors in project
-            for circut_name in self.circuts_names:
-                circut_test_runner = CircutTestVectorRunner(temporary_circ_path, self.project_name, circut_name)
-                circut_test_runner.run()
+            for circuit_name in self.circuits_names:
+                circuit_test_runner = CircutTestVectorRunner(temporary_circ_path, self.project_name, circuit_name)
+                circuit_test_runner.run()
 
         if 0 != TOTAL_FAILURES:
             print("\nFound {} failures in total".format(TOTAL_FAILURES))
