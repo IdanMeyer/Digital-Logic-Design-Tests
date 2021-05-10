@@ -40,7 +40,7 @@ class CircutTestVectorRunner(object):
     def __init__(self, circ_path, project_name, circuit_name):
         self.circ_path = circ_path
         self.project_name = project_name
-        self.circut_name = circuit_name
+        self.circuit_name = circuit_name
 
     def generate_errors_report(self, error_lines):
 
@@ -73,7 +73,6 @@ class CircutTestVectorRunner(object):
 
         errors_report = self.generate_errors_report(error_lines)
 
-
         if int(failed) != len(error_lines):
             raise InfraException("Expected to have {} error but had {} error lines".format(
                 int(failed),
@@ -81,10 +80,10 @@ class CircutTestVectorRunner(object):
             ))
 
         if int(failed) > 0:
-            print("\n{} - {} failures".format(int(failed), self.circut_name))
+            print("\n{} - {} failures".format(int(failed), self.circuit_name))
             print_table(errors_report)
         else:
-            print("{} - Passed".format(self.circut_name))
+            print("{} - Passed".format(self.circuit_name))
 
         return int(failed)
 
@@ -95,6 +94,9 @@ class CircutTestVectorRunner(object):
 
         if "Error loading test vector" in str_err:
             raise InfraException("Error while loading test vector. Full stderr: {}".format(str_err))
+
+        if "Circuit '{}' not found".format(self.circuit_name) in str_err:
+            raise InfraException("Circuit not found at circ file. Full stderr: {}".format(str_err))
 
         total_tests = re.search("Running (\d+) vectors", str_output).group(1)
         passed = re.search("Passed: (\d+)", str_output).group(1)
@@ -119,7 +121,7 @@ class CircutTestVectorRunner(object):
     def _get_test_vector_path(self):
         return os.path.join("TestVectors",
                             self.project_name,
-                            "test_vector_{}.txt".format(self.circut_name))
+                            "test_vector_{}.txt".format(self.circuit_name))
 
     def run(self):
         output = subprocess.run(["java",
@@ -127,7 +129,7 @@ class CircutTestVectorRunner(object):
                                  type(self).LOGISIM_PATH,
                                  self.circ_path,
                                  "-test",
-                                 self.circut_name,
+                                 self.circuit_name,
                                  self._get_test_vector_path(),
                                  ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return self._validate_output_test_vector(output)
