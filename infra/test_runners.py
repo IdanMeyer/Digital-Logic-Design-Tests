@@ -132,6 +132,11 @@ class CircutTestVectorRunner(object):
                                  self.circuit_name,
                                  self._get_test_vector_path(),
                                  ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if output.returncode != 0:
+            raise InfraException("Error while executing logisim.\nstdout:{}\nstderr:{}".format(
+                output.stdout,
+                output.stderr
+            ))
         return self._validate_output_test_vector(output)
 
 class ProjectTestsRunner(object):
