@@ -8,7 +8,7 @@ Tests for logisim projects at Digital Logic Design course
   * At the top right of your screen click on "Code" and then "Download Zip"
   * Extract the downloaded zip
 * Copy your ".circ" file to the "TestsRunner" folder
-* Double click on "windows_runner.bat" in order to run the tests on this specific .circ file
+* Double click on "windows_runner.bat" or "mac_runner.sh" in order to run the tests on this specific .circ file
 
 
 ### Notes
