@@ -9,7 +9,7 @@ from infra.test_runners import ProjectTestsRunner
 project_circuts_mapping = {
     "introduction": ["ztor", "pf4", "tautology", "parity", "ztand"],
     "graycode": ["g2b1", "g2b2", "g2b3", "g2b4"],
-    "alu": ["shifter", "add_sub"],
+    "alu": ["opcode_decoder", "shifter", "add_sub"],
 }
 
 TESTS_RUNNER_DIR = "TestsRunner"

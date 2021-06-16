@@ -1,0 +1,8 @@
+#First line labels input and output pins, labeled with [bit width] if >1
+#Each line after is an individual test with each column representing a pin
+#Numbers can be in decimal, binary, hexadecimal, or even octal if you want
+opcode[2] add_sub sub shift left
+    00       1    0     0    0
+    01       1    1     0    0
+    10       0    0     1    1
+    11       0    0     1    0
