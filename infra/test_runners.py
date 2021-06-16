@@ -59,11 +59,18 @@ class CircutTestVectorRunner(object):
 
             expected_vars = test_vector_data.split(NEWLINE)[int(line_number)].split()
             actual_vars = test_vector_data.split(NEWLINE)[int(line_number)].split()
-            # Find actual data which does not match expected data
-            bla = re.search("(\w) = (\w+) \(expected (\w+)\)", error_message.strip())
-            variable_name = bla.group(1)
+            # Find actual data which does not match expected data (up to 4 bits)
+            try:
+                bla = re.search("(\w) = (\w+) \(expected (\w+)\)", error_message.strip())
+                variable_name = bla.group(1)
+            # TODO: Remove this hack. Added it in order to handle 8 bit output such as:
+            #  "y = 0000 0000 (expected 0000 0001)"
+            except AttributeError:
+                bla = re.search("(\w) = (\w+) (\w+) \(expected (\w+) (\w+)\)", error_message.strip())
+                variable_name = bla.group(1)
             actual_var = bla.group(2)
             expected_var = bla.group(3)
+
             actual_vars[var_names.index(variable_name)] = actual_var
             errors_report.append(expected_vars + actual_vars)
         return errors_report
